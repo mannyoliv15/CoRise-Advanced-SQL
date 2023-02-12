@@ -1,3 +1,4 @@
+---Creating a CTE with food preference count
 With food_count_pref AS(
      Select 
         customer_id,
@@ -6,6 +7,7 @@ With food_count_pref AS(
     Where is_active = true
     Group By 1
 ),
+----Creating a CTE with chicago as location
 chicago_location AS(
 
     Select 
@@ -13,6 +15,7 @@ chicago_location AS(
     From vk_data.resources.us_cities 
     Where city_name = 'CHICAGO' And state_abbr = 'IL'
 ),
+----Creating a CTE with Gary, Indiana as location
 gary_location AS(
 
     Select 
@@ -41,4 +44,4 @@ Where
     Or
     (customer_state = 'CA' and (Trim(city_name) Ilike Any ('%oakland%','%pleasant hill%')))
     Or
-    (customer_state = 'TX' and (Trim(city_name) Ilike Any ('%arlington%','%brownsville%')
+    (customer_state = 'TX' and (Trim(city_name) Ilike Any ('%arlington%','%brownsville%')))
