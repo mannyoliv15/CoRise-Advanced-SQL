@@ -1,0 +1,60 @@
+
+--Total unique sessions
+
+--The average length of sessions in seconds
+
+--The average number of searches completed before displaying a recipe 
+
+--The ID of the recipe that was most viewed 
+
+---Creating CTE for unique sessions
+With unique_sessions As(
+  Select
+        event_id,
+        session_id,
+        event_timestamp,
+        Trim(parse_json(event_details):"recipe_id", '"') As recipe_id,
+        Trim(parse_json(event_details):"event", '"') As event_type
+    From vk_data.events.website_activity
+    Group By 1, 2, 3, 4, 5
+),
+---- Creating CTE for group sessions
+sessions As (
+    
+    Select
+        session_id,
+        Min(event_timestamp) as min_timestamp,
+        Max(event_timestamp) as max_timestamp,
+        Iff(count_if(event_type = 'view_recipe') = 0, null,
+            round(Count_if(event_type = 'search') / Count_if(event_type = 'view_recipe'))) as searches_per_rec
+    From unique_sessions
+    Group  By session_id
+    
+),
+--- Creating CTE for favorite recipe
+favorite_rec As (
+Select
+	event_id,
+    recipe_id,
+    Date(event_timestamp) AS event_date,
+    count(*) AS tot_views
+From unique_sessions
+WHERE recipe_id Is Not Null
+Group By 3,2,1
+-- Window function selecting the top total view
+Qualify ROW_NUMBER() over (PARTITION BY event_date ORDER BY tot_views) = 1
+),
+
+daily_usage_query As (
+Select
+	Count(s.session_id) As total_unique_sessions,
+    Round(Avg(Datediff(second,s.min_timestamp,s.max_timestamp)),2) As avg_session_length,
+    Avg(s.searches_per_rec) AS avg_searches,
+    Max(fc.recipe_id) AS favorite_recipe
+From sessions As s
+Inner join unique_sessions As us On us.session_id = s.session_id
+Inner join favorite_rec AS fc on fc.event_date = Date(us.event_timestamp)
+)
+
+Select *
+FROM daily_usage_query
